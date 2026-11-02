@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Discovery Agent records how a back-office team actually works, finds the repetitive processes, prices them, and hands you a costed automation roadmap.">
+<title>Discovery Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:wght@400;500;700&family=Martian+Mono:wdth,wght@87.5,400;87.5,600&display=swap">
+<style>
+/* Layout: a time-and-motion study sheet. Graph paper, ruled forms, ASME process-chart symbols
+   (○ operation, ⇨ transport, □ inspection, D delay) as the page's own vocabulary. Hard edges, no cards. */
+:root {
+  --paper: #e9ecea;
+  --grid: #d3e3e8;
+  --ink: #0c1c2c;
+  --ink-2: #4b5b6a;
+  --rule: #0c1c2c;
+  --hairline: #b8c6cf;
+  --hl: #ffd60a;
+  --hl-ink: #0c1c2c;
+  --pen: #d1281d;
+  --field: #ffffff;
+
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --t-small: clamp(0.78rem, 0.76rem + 0.1vw, 0.84rem);
+  --t-body: clamp(1rem, 0.97rem + 0.15vw, 1.07rem);
+  --t-lead: clamp(1.15rem, 1.05rem + 0.45vw, 1.4rem);
+  --t-h2: clamp(2.4rem, 1.7rem + 3vw, 4.4rem);
+  --t-hero: clamp(3.6rem, 2rem + 7.5vw, 8.4rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b2036; --grid: #15314d; --ink: #e8f1f7; --ink-2: #9db3c6; --rule: #e8f1f7; --hairline: #2c4a68;
+    --hl: #ffd60a; --hl-ink: #0b2036; --pen: #ff6f61; --field: #0e2740;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b2036; --grid: #15314d; --ink: #e8f1f7; --ink-2: #9db3c6; --rule: #e8f1f7; --hairline: #2c4a68;
+  --hl: #ffd60a; --hl-ink: #0b2036; --pen: #ff6f61; --field: #0e2740;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  font: 400 var(--t-body)/1.6 var(--body);
+}
+h1, h2, h3 { margin: 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: .9; text-wrap: balance; letter-spacing: .005em; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--hl); outline-offset: 2px; }
+mark { background: linear-gradient(transparent 52%, var(--hl) 52%, var(--hl) 92%, transparent 92%); color: inherit; padding: 0 .08em; }
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font: 600 .68rem/1.3 var(--mono); font-stretch: 87.5%; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.sym { font: 600 1rem/1 var(--mono); display: inline-grid; place-items: center; width: 1.5em; height: 1.5em; }
+section { padding-block: clamp(64px, 9vw, 120px); border-top: 2px solid var(--rule); }
+.sec-head { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr); gap: 16px 40px; margin-bottom: clamp(32px, 5vw, 56px); align-items: end; }
+.sec-head h2 { font-size: var(--t-h2); }
+.sec-head p { grid-column: 2; max-width: 58ch; color: var(--ink-2); font-size: var(--t-lead); line-height: 1.45; }
+@media (max-width: 760px) { .sec-head { grid-template-columns: 1fr; } .sec-head p { grid-column: 1; } }
+
+/* ---------- top bar ---------- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-bottom: 2px solid var(--rule); }
+.top .wrap { display: flex; justify-content: space-between; align-items: stretch; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; padding-block: 12px; text-decoration: none; font: 900 1.45rem/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.brand svg { width: 28px; height: 28px; flex-shrink: 0; }
+.top nav { display: flex; align-items: stretch; }
+.top nav a { display: flex; align-items: center; padding-inline: 16px; text-decoration: none; font: 600 .72rem/1 var(--mono); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; border-left: 1px solid var(--hairline); }
+.top nav a:hover { background: var(--hl); color: var(--hl-ink); }
+.top nav a.go { background: var(--ink); color: var(--paper); border-left: 0; }
+.top nav a.go:hover { background: var(--hl); color: var(--hl-ink); }
+@media (max-width: 720px) { .top nav a:not(.go) { display: none; } }
+
+/* ---------- hero ---------- */
+.hero { border-top: 0; padding-block: clamp(40px, 6vw, 72px) clamp(56px, 8vw, 96px); }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 5vw, 64px); align-items: start; }
+@media (max-width: 960px) { .hero .wrap { grid-template-columns: 1fr; } }
+.hero-copy { display: grid; gap: 26px; min-width: 0; }
+.hero h1 { font-size: var(--t-hero); font-weight: 900; line-height: .84; }
+.hero h1 .pen { color: var(--pen); }
+.hero .lead { font-size: var(--t-lead); line-height: 1.45; max-width: 34ch; }
+.ctas { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 20px; font: 600 .76rem/1 var(--mono); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; border: 2px solid var(--rule); cursor: pointer; background: transparent; color: var(--ink); }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btn:hover { background: var(--hl); color: var(--hl-ink); border-color: var(--hl); }
+.legend-strip { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 400 .7rem/1.4 var(--mono); font-stretch: 87.5%; color: var(--ink-2); }
+.legend-strip b { color: var(--ink); font-weight: 600; }
+
+/* the study sheet */
+.sheet { background: var(--field); border: 2px solid var(--rule); box-shadow: 8px 8px 0 var(--rule); min-width: 0; }
+.sheet-head { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 2px solid var(--rule); }
+.sheet-head div { padding: 9px 12px; border-left: 1px solid var(--hairline); display: grid; gap: 4px; min-width: 0; }
+.sheet-head div:first-child { border-left: 0; }
+.sheet-head b { font: 600 .78rem/1.2 var(--mono); font-stretch: 87.5%; overflow-wrap: anywhere; }
+.watch { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; border-bottom: 1px solid var(--hairline); }
+.watch .time { font: 800 2.6rem/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: .02em; }
+.watch .rec { font: 600 .7rem/1 var(--mono); letter-spacing: .1em; color: var(--pen); display: inline-flex; gap: 8px; align-items: center; }
+.watch .rec i { width: 9px; height: 9px; background: var(--pen); border-radius: 50%; animation: blink 1.2s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.study { width: 100%; border-collapse: collapse; font: 400 .74rem/1.35 var(--mono); font-stretch: 87.5%; }
+.study th { text-align: left; font-weight: 600; font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); padding: 8px 10px; border-bottom: 1px solid var(--hairline); }
+.study td { padding: 7px 10px; border-bottom: 1px dotted var(--hairline); vertical-align: top; }
+.study td:first-child { width: 2.6em; text-align: center; font-size: .95rem; }
+.study td.t { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; width: 4.5em; }
+.study td.app { color: var(--ink-2); white-space: nowrap; }
+.study tr.rework td.el { color: var(--pen); text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.study tr.rework td:first-child, .study tr.reject td:first-child { color: var(--pen); }
+.study tr.reject td.el em { color: var(--pen); font-style: normal; }
+.study tr.enter { animation: write .35s ease both; }
+@keyframes write { from { opacity: 0; transform: translateX(-6px); } }
+.sheet-foot { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2px solid var(--rule); }
+.sheet-foot div { padding: 10px 12px; border-left: 1px solid var(--hairline); display: grid; gap: 4px; }
+.sheet-foot div:first-child { border-left: 0; }
+.sheet-foot b { font: 800 1.7rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.sheet-foot .money { background: var(--hl); color: var(--hl-ink); }
+.sheet-foot .money .label { color: var(--hl-ink); }
+.scroll-x { overflow-x: auto; }
+
+/* ---------- totals ---------- */
+.totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 2px solid var(--rule); }
+.totals div { padding: 22px 18px 20px; border-left: 1px solid var(--hairline); display: grid; gap: 10px; align-content: start; }
+.totals div:first-child { border-left: 0; padding-left: 0; }
+.totals b { font: 900 clamp(3rem, 2rem + 4vw, 5.6rem)/.85 var(--display); font-variant-numeric: tabular-nums; }
+.totals b.red { color: var(--pen); }
+.totals span { font-size: var(--t-small); color: var(--ink-2); max-width: 22ch; }
+@media (max-width: 800px) { .totals { grid-template-columns: 1fr 1fr; } .totals div:nth-child(3) { border-left: 0; padding-left: 0; } .totals div:nth-child(n+3) { border-top: 1px solid var(--hairline); } }
+.note { margin-top: 14px; font: 400 .7rem/1.5 var(--mono); font-stretch: 87.5%; color: var(--ink-2); }
+
+/* ---------- process chart (how it works) ---------- */
+.chart { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.node { display: grid; gap: 14px; align-content: start; padding-right: 24px; min-width: 0; }
+.node .shape { position: relative; height: 64px; display: flex; align-items: center; }
+.node .shape::after { content: ""; position: absolute; left: 70px; right: 0; top: 50%; border-top: 2px dashed var(--rule); }
+.node:last-child .shape::after { display: none; }
+.shape .s { width: 56px; height: 56px; border: 3px solid var(--rule); display: grid; place-items: center; font: 900 1.6rem/1 var(--display); background: var(--field); }
+.s.op { border-radius: 50%; }
+.s.ins { border-radius: 0; }
+.s.tr { border: 0; background: none; width: 56px; }
+.s.tr svg { width: 56px; height: 56px; }
+.node h3 { font-size: clamp(1.9rem, 1.5rem + 1.4vw, 2.7rem); }
+.node p { color: var(--ink-2); font-size: var(--t-small); max-width: 30ch; }
+.node .by { font: 600 .68rem/1 var(--mono); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; justify-self: start; padding: 6px 8px; border: 1px solid var(--rule); }
+.node .by.ai { background: var(--ink); color: var(--paper); }
+.node .by.code { background: var(--hl); color: var(--hl-ink); border-color: var(--hl); }
+@media (max-width: 860px) { .chart { grid-template-columns: 1fr 1fr; row-gap: 40px; } .node:nth-child(2) .shape::after { display: none; } }
+@media (max-width: 480px) { .chart { grid-template-columns: 1fr; } .node .shape::after { display: none; } }
+.rule-statement { margin-top: clamp(40px, 6vw, 72px); display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 16px 40px; align-items: end; border-top: 2px solid var(--rule); padding-top: 22px; }
+.rule-statement h3 { font-size: clamp(2.6rem, 1.8rem + 3.6vw, 5.4rem); line-height: .86; }
+.rule-statement p { color: var(--ink-2); max-width: 46ch; }
+@media (max-width: 760px) { .rule-statement { grid-template-columns: 1fr; } }
+
+/* ---------- report ---------- */
+.report { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); border: 2px solid var(--rule); background: var(--field); }
+@media (max-width: 920px) { .report { grid-template-columns: 1fr; } }
+.report > div { padding: 24px; display: grid; gap: 20px; align-content: start; min-width: 0; }
+.report > div + div { border-left: 2px solid var(--rule); }
+@media (max-width: 920px) { .report > div + div { border-left: 0; border-top: 2px solid var(--rule); } }
+.report h3 { font-size: clamp(2rem, 1.6rem + 1.6vw, 3rem); }
+.fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--hairline); }
+.fields div { padding: 10px 12px 0 0; display: grid; gap: 4px; }
+.fields b { font: 800 1.9rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.bar { display: flex; height: 30px; border: 2px solid var(--rule); }
+.bar i { display: block; height: 100%; }
+.bar .manual { background: var(--ink); }
+.bar .rework { background: repeating-linear-gradient(45deg, var(--pen) 0 3px, transparent 3px 7px); border-left: 2px solid var(--rule); }
+.bar .check { background: repeating-linear-gradient(-45deg, var(--hairline) 0 2px, transparent 2px 6px); border-left: 2px solid var(--rule); }
+.bar-key { display: flex; flex-wrap: wrap; gap: 6px 22px; font: 400 .7rem/1.4 var(--mono); font-stretch: 87.5%; }
+.bar-key span { display: inline-flex; align-items: center; gap: 8px; }
+.bar-key i { width: 14px; height: 14px; border: 1.5px solid var(--rule); }
+.tool { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+.tool th { text-align: left; font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); padding: 0 12px 8px 0; border-bottom: 2px solid var(--rule); }
+.tool td { padding: 12px 12px 4px 0; vertical-align: top; font-variant-numeric: tabular-nums; }
+.tool .big { font: 800 1.5rem/1 var(--display); }
+.qs { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: q; }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-top: 1px solid var(--hairline); }
+.qs li::before { content: "Q" counter(q); font: 800 1.3rem/1.2 var(--display); color: var(--pen); }
+.qs p { font-weight: 500; }
+.qs small { display: block; margin-top: 6px; font: 400 .7rem/1.45 var(--mono); font-stretch: 87.5%; color: var(--ink-2); }
+
+/* ---------- privacy ---------- */
+.ledger { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 2px solid var(--rule); }
+.ledger > div { padding: 18px 0 0; min-width: 0; }
+.ledger > div + div { border-left: 2px solid var(--rule); padding-left: 24px; }
+.ledger h3 { font-size: 1.9rem; margin-bottom: 14px; }
+.ledger ul { list-style: none; margin: 0; padding: 0 24px 0 0; }
+.ledger li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px dotted var(--hairline); align-items: center; }
+.box { width: 18px; height: 18px; border: 2px solid var(--rule); position: relative; }
+.yes .box::after { content: ""; position: absolute; left: 4px; top: 0; width: 5px; height: 10px; border: solid var(--ink); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.no .box::before, .no .box::after { content: ""; position: absolute; left: 50%; top: -3px; width: 2.5px; height: 20px; background: var(--pen); }
+.no .box::before { transform: translateX(-50%) rotate(45deg); }
+.no .box::after { transform: translateX(-50%) rotate(-45deg); }
+@media (max-width: 680px) { .ledger { grid-template-columns: 1fr; } .ledger > div + div { border-left: 0; padding-left: 0; border-top: 2px solid var(--rule); margin-top: 18px; } }
+.modes { margin-top: clamp(40px, 6vw, 64px); width: 100%; border-collapse: collapse; border: 2px solid var(--rule); background: var(--field); font-size: var(--t-small); }
+.modes th, .modes td { padding: 14px 16px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--hairline); }
+.modes thead th { font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); border-bottom: 2px solid var(--rule); }
+.modes tbody th { font: 800 1.6rem/1 var(--display); text-transform: uppercase; white-space: nowrap; }
+.modes tbody tr:last-child th, .modes tbody tr:last-child td { border-bottom: 0; }
+.modes .lock { background: var(--hl); color: var(--hl-ink); }
+.terms { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 0; border: 2px solid var(--rule); }
+.terms span { padding: 12px 16px; font: 600 .72rem/1.3 var(--mono); font-stretch: 87.5%; letter-spacing: .04em; border-right: 1px solid var(--hairline); flex: 1 1 200px; }
+.terms span:last-child { border-right: 0; }
+
+/* ---------- independent ---------- */
+.indep .wrap { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: end; }
+@media (max-width: 880px) { .indep .wrap { grid-template-columns: 1fr; } }
+.indep h2 { font-size: clamp(3rem, 2rem + 5vw, 7rem); line-height: .84; }
+.indep h2 span { color: var(--pen); }
+.terms-list { display: grid; border-top: 2px solid var(--rule); }
+.terms-list div { padding: 14px 0; border-bottom: 1px solid var(--hairline); display: grid; gap: 4px; }
+.terms-list b { font-weight: 700; }
+.terms-list span { color: var(--ink-2); font-size: var(--t-small); }
+
+/* ---------- requisition form ---------- */
+.req .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: start; }
+@media (max-width: 880px) { .req .wrap { grid-template-columns: 1fr; } }
+.req h2 { font-size: clamp(3rem, 2rem + 4.6vw, 6.4rem); line-height: .84; }
+.req .lead { margin-top: 20px; color: var(--ink-2); font-size: var(--t-lead); line-height: 1.45; max-width: 36ch; }
+form { border: 2px solid var(--rule); background: var(--field); box-shadow: 8px 8px 0 var(--rule); }
+.form-title { display: flex; justify-content: space-between; gap: 12px; padding: 10px 14px; border-bottom: 2px solid var(--rule); }
+.form-body { padding: 8px 14px 18px; display: grid; gap: 0; }
+.f { display: grid; gap: 2px; padding: 12px 0 8px; border-bottom: 1px solid var(--hairline); }
+.f label { font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.f input, .f select { font: 500 1.05rem/1.4 var(--body); color: var(--ink); background: transparent; border: 0; padding: 4px 0; width: 100%; }
+.f input:focus, .f select:focus { outline: none; background: linear-gradient(transparent 70%, var(--hl) 70%); }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+@media (max-width: 480px) { .two { grid-template-columns: 1fr; } }
+.form-body .btn { margin-top: 18px; justify-self: start; }
+.msg { margin-top: 12px; font: 400 .74rem/1.5 var(--mono); font-stretch: 87.5%; }
+.msg.err { color: var(--pen); }
+
+footer { border-top: 2px solid var(--rule); padding-block: 22px; font: 400 .7rem/1.5 var(--mono); font-stretch: 87.5%; color: var(--ink-2); background: var(--paper); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Discovery Agent home">
+      <svg viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="15" r="11" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+        <rect x="11.5" y="0.5" width="5" height="3" fill="var(--ink)"/>
+        <path d="M14 15 L14 7.5" stroke="var(--pen)" stroke-width="2.5" stroke-linecap="square"/>
+        <circle cx="14" cy="15" r="2" fill="var(--ink)"/>
+      </svg>
+      Discovery Agent
+    </a>
+    <nav aria-label="Sections">
+      <a href="workflow.html">Full workflow</a>
+      <a href="#report">Report</a>
+      <a href="#privacy">Privacy</a>
+      <a class="go" href="#request">Book a scan →</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="label">A time-and-motion study for back-office teams</span>
+        <h1>Watch the work.<br><span class="pen">Cut</span> the rest.</h1>
+        <p class="lead">Discovery Agent records how your finance team really works, <mark>finds the repetitive tasks worth automating</mark>, and tells you which existing tool to buy, what it saves, and when it pays back.</p>
+        <div class="ctas">
+          <a class="btn solid" href="#request">Book a discovery scan →</a>
+          <a class="btn" href="workflow.html">See the full workflow</a>
+        </div>
+        <div class="legend-strip" aria-label="Symbol key">
+          <span><b>○</b> operation</span><span><b>⇨</b> transport</span><span><b>□</b> inspection</span><span><b style="color:var(--pen)">✕</b> rework</span>
+        </div>
+      </div>
+
+      <div class="sheet" aria-label="Example time study recorded by the agent">
+        <div class="sheet-head">
+          <div><span class="label">Operation</span><b>Supplier invoice entry</b></div>
+          <div><span class="label">Subject</span><b>Person B · AP clerk</b></div>
+          <div><span class="label">Observer</span><b>Discovery Agent</b></div>
+        </div>
+        <div class="watch">
+          <span class="time" id="clock">03:21</span>
+          <span class="rec"><i></i>RECORDING · LOCAL</span>
+        </div>
+        <div class="scroll-x">
+          <table class="study">
+            <thead><tr><th scope="col">Sym</th><th scope="col">Element</th><th scope="col">App</th><th scope="col" style="text-align:right">t</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="sheet-foot">
+          <div><span class="label">Per invoice</span><b>2.3 min</b></div>
+          <div><span class="label">Reworked</span><b style="color:var(--pen)">4 of 5</b></div>
+          <div class="money"><span class="label">Est. cost</span><b>AED 2,730/mo</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="totals-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="label">Pilot totals</span>
+        <h2 id="totals-h">14 minutes. Five invoices.</h2>
+        <p>Two clerks in a simulated accounts-payable team, recorded while they worked. Interviews would have missed nearly all of this.</p>
+      </div>
+      <div class="totals">
+        <div><b class="red">4/5</b><span>invoices needed rework or had an error</span></div>
+        <div><b>10</b><span>app switches per minute, email to accounting and back</span></div>
+        <div><b>24</b><span>copy-pastes between systems</span></div>
+        <div><b>11 mo</b><span>payback on the recommended tool</span></div>
+      </div>
+      <p class="note">Mock company with planted errors. Monthly volumes and hourly rates are assumptions the client confirms in the interview.</p>
+    </div>
+  </section>
+
+  <section id="method" aria-labelledby="method-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="label">Method</span>
+        <h2 id="method-h">From clicks to a roadmap</h2>
+      </div>
+      <div class="chart">
+        <div class="node">
+          <div class="shape"><span class="s op">1</span></div>
+          <h3>Record</h3>
+          <p>A few people install a browser extension and work as usual for a few days. They can pause anytime.</p>
+          <span class="by">Your team</span>
+        </div>
+        <div class="node">
+          <div class="shape"><span class="s op">2</span></div>
+          <h3>Understand</h3>
+          <p>The AI turns clicks into plain steps and finds the work that repeats, like entering invoices or chasing approvals.</p>
+          <span class="by ai">AI</span>
+        </div>
+        <div class="node">
+          <div class="shape"><span class="s ins">3</span></div>
+          <h3>Measure</h3>
+          <p>Code counts the time, the rework and the checking, and turns it into money. Every number shows its formula.</p>
+          <span class="by code">Plain code</span>
+        </div>
+        <div class="node">
+          <div class="shape"><span class="s ins">4</span></div>
+          <h3>Recommend</h3>
+          <p>Each task is matched to tools that already exist, with savings, cost, payback and the questions to ask first.</p>
+          <span class="by code">Catalog + scoring</span>
+        </div>
+      </div>
+      <div class="rule-statement">
+        <h3>AI describes.<br>Code measures.</h3>
+        <p>The AI never invents a number. Every finding links to the screenshot it came from and stays a draft until a person confirms it.</p>
+      </div>
+      <p style="margin-top:28px"><a class="btn solid" href="workflow.html">See the full workflow, stage by stage →</a></p>
+    </div>
+  </section>
+
+  <section id="report" aria-labelledby="report-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="label">Deliverable</span>
+        <h2 id="report-h">A report your CFO can act on</h2>
+        <p>An excerpt from the pilot report: the process, what it costs, the tool that fits, and what to ask before buying.</p>
+      </div>
+      <div class="report">
+        <div>
+          <span class="label">Process 1 of 2 · high automation fit</span>
+          <h3>Supplier invoice entry</h3>
+          <div class="fields">
+            <div><span class="label">Observed</span><b>2.3 min</b><span class="label">per invoice</span></div>
+            <div><span class="label">Volume</span><b>350</b><span class="label">per month, to confirm</span></div>
+            <div><span class="label">Yearly cost</span><b>AED 32.8k</b><span class="label">all three buckets</span></div>
+          </div>
+          <div class="bar" role="img" aria-label="Monthly cost: manual work AED 800, rework AED 180, checking AED 1,750">
+            <i class="manual" style="width:29%"></i><i class="rework" style="width:7%"></i><i class="check" style="width:64%"></i>
+          </div>
+          <div class="bar-key">
+            <span><i style="background:var(--ink)"></i>Manual work AED 800</span>
+            <span><i style="background:repeating-linear-gradient(45deg,var(--pen) 0 2px,transparent 2px 5px)"></i>Rework AED 180</span>
+            <span><i style="background:repeating-linear-gradient(-45deg,var(--hairline) 0 2px,transparent 2px 5px)"></i>Checking AED 1,750</span>
+          </div>
+          <div class="scroll-x">
+            <table class="tool">
+              <thead><tr><th>Recommended tool</th><th>Takes over</th><th>Net saving</th><th>Payback</th></tr></thead>
+              <tbody><tr>
+                <td><span class="big">Yooz</span><br><span class="label">AP automation</span></td>
+                <td>Reading invoices, PO checks, duplicate detection, approval requests</td>
+                <td><span class="big">AED 707</span><br><span class="label">per month</span></td>
+                <td><span class="big">11 mo</span></td>
+              </tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <span class="label">Interview plan · 3 of 20 questions</span>
+          <ol class="qs">
+            <li><div><p>An invoice was booked as NLT-09411 instead of NLT-0941 and the system accepted it. How would anyone find that today?</p><small>Tests: wrong invoice numbers go unnoticed until a supplier complains.</small></div></li>
+            <li><div><p>We assumed 350 invoices a month. How many does the team actually enter, and what happens at month-end?</p><small>Tests: the volume behind every cost figure.</small></div></li>
+            <li><div><p>Neither clerk opened the purchase-order system before submitting. Should a bill stop when it doesn't match its PO?</p><small>Tests: where a human approval has to stay.</small></div></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="privacy" aria-labelledby="privacy-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="label">Privacy</span>
+        <h2 id="privacy-h">Observed, not watched</h2>
+        <p>People agree to a study when it's clear what is recorded, they stay in control, and nobody gets graded.</p>
+      </div>
+      <div class="ledger">
+        <div class="yes">
+          <h3>Recorded</h3>
+          <ul>
+            <li><span class="box"></span>Clicks and page changes</li>
+            <li><span class="box"></span>Switching between apps</li>
+            <li><span class="box"></span>Copy and paste between systems</li>
+            <li><span class="box"></span>Error messages the app shows</li>
+            <li><span class="box"></span>Screenshots, kept as evidence</li>
+          </ul>
+        </div>
+        <div class="no">
+          <h3>Never recorded</h3>
+          <ul>
+            <li><span class="box"></span>What people type</li>
+            <li><span class="box"></span>Passwords, which are blacked out on screen</li>
+            <li><span class="box"></span>Anything while paused</li>
+            <li><span class="box"></span>Apps you haven't approved</li>
+            <li><span class="box"></span>Scores or rankings of individuals</li>
+          </ul>
+        </div>
+      </div>
+      <div class="scroll-x">
+        <table class="modes">
+          <thead><tr><th scope="col">Mode</th><th scope="col">Where the AI runs</th><th scope="col">What it sees</th><th scope="col">Use it for</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><span class="lock">Private</span></th><td>A computer in your office</td><td>Everything stays in the building</td><td>Finance, HR, health, government</td></tr>
+            <tr><th scope="row">Cloud</th><td>A large hosted model</td><td>Text only, never screenshots</td><td>Non-sensitive work, when you want more detail</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="terms">
+        <span>Consent before recording</span><span>Pause anytime</span><span>Names shown as Person A, B</span><span>Raw recordings deleted on request</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="indep" aria-labelledby="indep-h">
+    <div class="wrap">
+      <h2 id="indep-h">We don't sell automation. <span>We tell you which to buy.</span></h2>
+      <div class="terms-list">
+        <div><b>No referral fees</b><span>Tools are ranked by a published scoring method, not by who pays us.</span></div>
+        <div><b>We never build it ourselves</b><span>Where no tool fits, we write a spec your own team or agency can build from.</span></div>
+        <div><b>Re-measure after the change</b><span>Record the same team after the tool goes live and see whether the time actually went down.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="req" id="request" aria-labelledby="req-h">
+    <div class="wrap">
+      <div>
+        <span class="label">Requisition</span>
+        <h2 id="req-h" style="margin-top:12px">Find out where the hours go.</h2>
+        <p class="lead">A discovery scan studies one team for one to two weeks and ends with a costed roadmap and an interview plan.</p>
+      </div>
+      <form id="lead" novalidate>
+        <div class="form-title"><span class="label">Form DA-1 · Discovery scan request</span><span class="label" id="formDate"></span></div>
+        <div class="form-body">
+          <div class="two">
+            <div class="f"><label for="f-name">Name</label><input id="f-name" name="name" autocomplete="name" required></div>
+            <div class="f"><label for="f-company">Company</label><input id="f-company" name="company" autocomplete="organization" required></div>
+          </div>
+          <div class="f"><label for="f-email">Work email</label><input id="f-email" name="email" type="email" autocomplete="email" required></div>
+          <div class="two">
+            <div class="f"><label for="f-team">Team to study</label>
+              <select id="f-team" name="team"><option>Accounts payable</option><option>Accounts receivable</option><option>Procurement</option><option>Several finance teams</option><option>Another back-office team</option></select>
+            </div>
+            <div class="f"><label for="f-size">Company size</label>
+              <select id="f-size" name="size"><option>200–500 staff</option><option selected>500–2,000 staff</option><option>2,000+ staff</option></select>
+            </div>
+          </div>
+          <button class="btn solid" type="submit">Submit request →</button>
+          <p class="msg" id="formMsg" hidden></p>
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Discovery Agent · Dubai, UAE</span>
+    <span>Prototype · pilot figures from a simulated team</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // Elements from the pilot recording (Person B, invoice INV-GOS-88247), in order.
+  const ROWS = [
+    ['○', 'Open invoice INV-GOS-88247', 'mail', 9],
+    ['○', 'Copy invoice number', 'mail', 26],
+    ['⇨', 'Switch to accounting system', 'mail → ledger', 27],
+    ['○', 'Paste invoice number', 'ledger', 29],
+    ['○', 'Copy and paste PO number', 'mail → ledger', 46],
+    ['○', 'Paste net amount and VAT', 'ledger', 124],
+    ['✕', 'Clear VAT and enter it again', 'ledger', 138, 'rework'],
+    ['□', 'Submit bill: <em>rejected, due date before invoice date</em>', 'ledger', 195, 'reject'],
+    ['○', 'Fix due date, resubmit → LP-2026-04401', 'ledger', 201],
+  ]
+  const tbody = document.getElementById('rows')
+  const clock = document.getElementById('clock')
+  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  const rowHTML = (r) => `<td aria-label="${{'○': 'operation', '⇨': 'transport', '□': 'inspection', '✕': 'rework'}[r[0]]}">${r[0]}</td><td class="el">${r[1]}</td><td class="app">${r[2]}</td><td class="t">${fmt(r[3])}</td>`
+  function addRow(r, animate) {
+    const tr = document.createElement('tr')
+    if (r[4]) tr.className = r[4]
+    if (animate) tr.classList.add('enter')
+    tr.innerHTML = rowHTML(r)
+    tbody.appendChild(tr)
+  }
+  ROWS.forEach((r) => addRow(r, false)) // complete at rest
+  clock.textContent = fmt(201)
+
+  document.getElementById('formDate').textContent = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+
+  // Request form: this preview page can't send requests yet, and says so.
+  document.getElementById('lead').addEventListener('submit', (e) => {
+    e.preventDefault()
+    const msg = document.getElementById('formMsg')
+    const get = (id) => document.getElementById(id)
+    const missing = ['f-name', 'f-company', 'f-email'].find((id) => !get(id).value.trim())
+    msg.className = 'msg err'
+    if (missing) { msg.textContent = 'Please fill in your name, company and work email.'; msg.hidden = false; get(missing).focus(); return }
+    if (!get('f-email').checkValidity()) { msg.textContent = 'That email address doesn’t look right. Check it and try again.'; msg.hidden = false; get('f-email').focus(); return }
+    msg.className = 'msg'
+    msg.textContent = `Thanks, ${get('f-name').value.trim().split(' ')[0]}. This preview doesn't send requests yet; booking opens at launch.`
+    msg.hidden = false
+    e.currentTarget.querySelector('button').disabled = true
+  })
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+  // Replay the study: rows are written in as the stopwatch runs.
+  let timer = null
+  let t = 0
+  let next = 0
+  function run() {
+    if (next === 0 && t === 0) { tbody.innerHTML = '' }
+    t += 3
+    clock.textContent = fmt(Math.min(t, ROWS[ROWS.length - 1][3]))
+    while (next < ROWS.length && ROWS[next][3] <= t) { addRow(ROWS[next], true); next += 1 }
+    if (next >= ROWS.length) { t = 0; next = 0; timer = setTimeout(run, 6000); return }
+    timer = setTimeout(run, 90)
+  }
+  timer = setTimeout(run, 2500)
+  document.addEventListener('visibilitychange', () => { clearTimeout(timer); if (!document.hidden) timer = setTimeout(run, 800) })
+})()
+</script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>How Discovery Agent Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Public+Sans:wght@400;500;700&family=Martian+Mono:wdth,wght@87.5,400;87.5,600&display=swap">
+<style>
+/* Layout: the full time study, one stage per section, each with its own drawn exhibit.
+   Same tokens as the landing page: ruled forms, process-chart symbols, highlighter and correction pen. */
+:root {
+  --paper: #e9ecea;
+  --ink: #0c1c2c;
+  --ink-2: #4b5b6a;
+  --rule: #0c1c2c;
+  --hairline: #b8c6cf;
+  --hl: #ffd60a;
+  --hl-ink: #0c1c2c;
+  --pen: #d1281d;
+  --field: #ffffff;
+  --private: #0b7a5c;
+  --cloud: #2f5fbf;
+
+  --display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --body: "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --t-small: clamp(0.78rem, 0.76rem + 0.1vw, 0.84rem);
+  --t-body: clamp(1rem, 0.97rem + 0.15vw, 1.07rem);
+  --t-lead: clamp(1.15rem, 1.05rem + 0.45vw, 1.4rem);
+  --t-h2: clamp(2.4rem, 1.7rem + 3vw, 4.2rem);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0b2036; --ink: #e8f1f7; --ink-2: #9db3c6; --rule: #e8f1f7; --hairline: #2c4a68;
+    --hl: #ffd60a; --hl-ink: #0b2036; --pen: #ff6f61; --field: #0e2740; --private: #4fd1a5; --cloud: #8fb0f5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0b2036; --ink: #e8f1f7; --ink-2: #9db3c6; --rule: #e8f1f7; --hairline: #2c4a68;
+  --hl: #ffd60a; --hl-ink: #0b2036; --pen: #ff6f61; --field: #0e2740; --private: #4fd1a5; --cloud: #8fb0f5;
+  color-scheme: dark;
+}
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--paper); color: var(--ink); font: 400 var(--t-body)/1.6 var(--body); }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+h1, h2, h3, h4 { margin: 0; font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: .9; text-wrap: balance; }
+p { margin: 0; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--hl); outline-offset: 2px; }
+mark { background: linear-gradient(transparent 52%, var(--hl) 52%, var(--hl) 92%, transparent 92%); color: inherit; padding: 0 .08em; }
+
+.wrap { max-width: 1200px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.label { font: 600 .68rem/1.3 var(--mono); font-stretch: 87.5%; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+.mono { font-family: var(--mono); font-stretch: 87.5%; }
+.scroll-x { overflow-x: auto; }
+
+/* top bar */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--paper); border-bottom: 2px solid var(--rule); }
+.top .wrap { display: flex; justify-content: space-between; align-items: stretch; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; padding-block: 12px; text-decoration: none; font: 900 1.45rem/1 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.brand svg { width: 28px; height: 28px; flex-shrink: 0; }
+.top nav { display: flex; align-items: stretch; }
+.top nav a { display: flex; align-items: center; padding-inline: 16px; text-decoration: none; font: 600 .72rem/1 var(--mono); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; border-left: 1px solid var(--hairline); }
+.top nav a:hover { background: var(--hl); color: var(--hl-ink); }
+.top nav a.go { background: var(--ink); color: var(--paper); border-left: 0; }
+.top nav a.go:hover { background: var(--hl); color: var(--hl-ink); }
+@media (max-width: 720px) { .top nav a.hide-sm { display: none; } }
+
+/* intro */
+.intro { padding-block: clamp(40px, 6vw, 72px) clamp(36px, 5vw, 56px); }
+.intro h1 { font-size: clamp(3.4rem, 2rem + 6.4vw, 7.6rem); font-weight: 900; line-height: .84; margin-top: 14px; }
+.intro .lead { margin-top: 22px; font-size: var(--t-lead); line-height: 1.45; max-width: 52ch; }
+
+/* stage index */
+.index { border: 2px solid var(--rule); background: var(--field); display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-top: clamp(32px, 5vw, 48px); }
+.index a { text-decoration: none; padding: 12px; border-left: 1px solid var(--hairline); display: grid; gap: 6px; align-content: start; }
+.index a:first-child { border-left: 0; }
+.index a:hover { background: var(--hl); color: var(--hl-ink); }
+.index b { font: 900 1.6rem/1 var(--display); }
+.index span { font: 600 .66rem/1.3 var(--mono); font-stretch: 87.5%; letter-spacing: .08em; text-transform: uppercase; }
+@media (max-width: 900px) { .index { grid-template-columns: repeat(4, minmax(0, 1fr)); } .index a:nth-child(5) { border-left: 0; } .index a:nth-child(n+5) { border-top: 1px solid var(--hairline); } }
+@media (max-width: 480px) { .index { grid-template-columns: 1fr 1fr; } .index a { border-left: 0; border-top: 1px solid var(--hairline); } .index a:nth-child(even) { border-left: 1px solid var(--hairline); } .index a:nth-child(-n+2) { border-top: 0; } }
+
+/* timeline of an engagement */
+.timeline { margin-top: 28px; border-top: 2px solid var(--rule); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.timeline div { padding: 14px 14px 0 0; display: grid; gap: 6px; position: relative; }
+.timeline div::before { content: ""; position: absolute; top: -7px; left: 0; width: 12px; height: 12px; background: var(--paper); border: 2px solid var(--rule); border-radius: 50%; }
+.timeline div.hl::before { background: var(--hl); }
+.timeline b { font: 800 1.15rem/1.1 var(--display); text-transform: uppercase; }
+.timeline span { font-size: var(--t-small); color: var(--ink-2); }
+@media (max-width: 760px) { .timeline { grid-template-columns: 1fr 1fr; row-gap: 22px; } }
+
+/* stage sections */
+.stage { border-top: 2px solid var(--rule); padding-block: clamp(56px, 8vw, 104px); }
+.stage-head { display: grid; grid-template-columns: minmax(0, 140px) minmax(0, 1fr) minmax(0, 1fr); gap: 16px 40px; align-items: start; margin-bottom: clamp(28px, 4vw, 44px); }
+.stage-num { font: 900 clamp(4.5rem, 3rem + 5vw, 8rem)/.8 var(--display); color: transparent; -webkit-text-stroke: 2px var(--rule); }
+.stage-head h2 { font-size: var(--t-h2); }
+.stage-head .who { margin-top: 14px; display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.tag { font: 600 .66rem/1 var(--mono); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; padding: 6px 8px; border: 1px solid var(--rule); }
+.tag.ai { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.tag.code { background: var(--hl); color: var(--hl-ink); border-color: var(--hl); }
+.tag.human { background: transparent; }
+.stage-head .text { display: grid; gap: 12px; color: var(--ink-2); }
+.stage-head .text p:first-child { color: var(--ink); font-size: var(--t-lead); line-height: 1.45; }
+@media (max-width: 900px) { .stage-head { grid-template-columns: minmax(0, 90px) minmax(0, 1fr); } .stage-head .text { grid-column: 1 / -1; } }
+
+.exhibit { border: 2px solid var(--rule); background: var(--field); min-width: 0; }
+.exhibit-cap { display: flex; justify-content: space-between; gap: 12px; padding: 9px 14px; border-bottom: 2px solid var(--rule); }
+.exhibit-body { padding: 18px; min-width: 0; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 860px) { .pair { grid-template-columns: 1fr; } }
+
+/* 1 · set up */
+.consent { border: 2px solid var(--rule); max-width: 420px; background: var(--paper); }
+.consent .bar { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 2px solid var(--rule); font: 700 .9rem/1 var(--body); }
+.consent .bar svg { width: 18px; height: 18px; }
+.consent .in { padding: 14px; display: grid; gap: 10px; font-size: var(--t-small); }
+.consent ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.consent .row { display: flex; gap: 10px; align-items: center; }
+.fakebox { width: 16px; height: 16px; border: 2px solid var(--rule); display: inline-grid; place-items: center; font: 700 .7rem/1 var(--mono); flex-shrink: 0; }
+.fakebtn { justify-self: start; padding: 10px 14px; background: var(--ink); color: var(--paper); font: 600 .7rem/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.allow { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+.allow th, .allow td { text-align: left; padding: 9px 10px 9px 0; border-bottom: 1px dotted var(--hairline); }
+.allow th { font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); border-bottom: 2px solid var(--rule); }
+.yes-mark { color: var(--private); font-weight: 700; }
+.no-mark { color: var(--pen); font-weight: 700; }
+
+/* 2 · record */
+.badge-demo { display: flex; align-items: center; gap: 10px; border: 2px solid var(--rule); padding: 8px 12px; justify-self: start; background: var(--paper); font: 600 .72rem/1 var(--mono); font-stretch: 87.5%; }
+.badge-demo i { width: 9px; height: 9px; border-radius: 50%; background: var(--pen); animation: blink 1.2s steps(2) infinite; }
+.badge-demo button { font: inherit; border: 1px solid var(--rule); background: var(--field); color: var(--ink); padding: 5px 8px; cursor: pointer; text-transform: uppercase; letter-spacing: .06em; }
+.badge-demo button:hover { background: var(--hl); color: var(--hl-ink); }
+.badge-demo.paused i { background: var(--ink-2); animation: none; }
+@keyframes blink { 50% { opacity: 0; } }
+.stream { font: 400 .74rem/1.75 var(--mono); font-stretch: 87.5%; height: 14em; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+.stream div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stream .k { color: var(--ink-2); }
+.stream .v { font-weight: 600; }
+.stream .e { color: var(--pen); font-weight: 600; }
+.stream .p { color: var(--ink-2); font-style: italic; }
+.enter { animation: write .35s ease both; }
+@keyframes write { from { opacity: 0; transform: translateX(-6px); } }
+.legend-list { display: grid; gap: 8px; font-size: var(--t-small); margin-top: 16px; }
+.legend-list div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 10px; }
+.legend-list .mono { font-weight: 600; font-size: .72rem; }
+
+/* 3 · split */
+.split { display: grid; grid-template-columns: minmax(0, 1.1fr) 48px minmax(0, 1fr); align-items: stretch; }
+.split .raw { font: 400 .72rem/1.7 var(--mono); font-stretch: 87.5%; display: grid; }
+.split .raw div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 8px; border-left: 4px solid transparent; }
+.split .raw div.g1 { border-left-color: var(--ink); }
+.split .raw div.g2 { border-left-color: var(--hl); }
+.split .raw div.g3 { border-left-color: var(--pen); }
+.split .raw div.g4 { border-left-color: var(--hairline); }
+.split .raw .drop { color: var(--ink-2); text-decoration: line-through; }
+.split .arrow { display: grid; place-items: center; }
+.split .arrow svg { width: 40px; height: 40px; }
+.split .steps { display: grid; gap: 10px; align-content: center; }
+.split .steps div { border: 2px solid var(--rule); padding: 10px 12px; display: grid; gap: 4px; }
+.split .steps div b { font-weight: 700; font-size: .92rem; }
+.split .steps div span { font: 400 .68rem/1.3 var(--mono); font-stretch: 87.5%; color: var(--ink-2); }
+.split .steps .s1 { box-shadow: inset 6px 0 0 var(--ink); }
+.split .steps .s2 { box-shadow: inset 6px 0 0 var(--hl); }
+.split .steps .s3 { box-shadow: inset 6px 0 0 var(--pen); }
+.split .steps .s4 { box-shadow: inset 6px 0 0 var(--hairline); }
+@media (max-width: 760px) { .split { grid-template-columns: 1fr; } .split .arrow svg { transform: rotate(90deg); } }
+.rules { margin-top: 18px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--hairline); }
+.rules div { padding: 12px 12px 0 0; font-size: var(--t-small); display: grid; gap: 4px; }
+.rules b { font: 600 .66rem/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+@media (max-width: 760px) { .rules { grid-template-columns: 1fr 1fr; } }
+
+/* 4 · understand */
+.pchart { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+.pchart th { text-align: left; font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); padding: 0 10px 8px 0; border-bottom: 2px solid var(--rule); white-space: nowrap; }
+.pchart td { padding: 9px 10px 9px 0; border-bottom: 1px dotted var(--hairline); vertical-align: middle; }
+.pchart .symcol { width: 210px; }
+.syms { display: flex; gap: 6px; }
+.syms span { width: 26px; height: 26px; display: grid; place-items: center; font: 600 .9rem/1 var(--mono); color: var(--hairline); border: 1px dashed var(--hairline); }
+.syms span.on { color: var(--ink); border: 2px solid var(--rule); background: var(--paper); }
+.syms span.on.r { color: var(--pen); border-color: var(--pen); }
+.route { display: grid; gap: 10px; }
+.route-row { display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1.4fr); gap: 8px; align-items: center; font-size: var(--t-small); }
+.rec { border: 2px solid var(--rule); padding: 8px 10px; display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+.toggle { display: inline-flex; border: 1.5px solid var(--rule); }
+.toggle button { font: 600 .62rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 6px 8px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.toggle button + button { border-left: 1.5px solid var(--rule); }
+.toggle button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.dest { padding: 8px 10px; border: 2px solid var(--rule); font: 600 .7rem/1.3 var(--mono); font-stretch: 87.5%; }
+.dest.local { border-color: var(--private); color: var(--private); }
+.dest.cloud { border-color: var(--cloud); color: var(--cloud); }
+.dest.code { border-style: dashed; color: var(--ink-2); }
+.route-note { font: 400 .7rem/1.5 var(--mono); font-stretch: 87.5%; color: var(--ink-2); margin-top: 6px; }
+
+/* 5 · measure */
+.formula { display: grid; gap: 14px; }
+.eq { display: grid; grid-template-columns: minmax(0, 150px) repeat(3, minmax(0, auto)) minmax(0, 1fr); gap: 8px 12px; align-items: baseline; padding: 12px 0; border-bottom: 1px dotted var(--hairline); }
+.eq .name { font: 800 1.2rem/1 var(--display); text-transform: uppercase; }
+.eq .term { font: 400 .78rem/1.3 var(--mono); font-stretch: 87.5%; }
+.eq .term small { display: block; color: var(--ink-2); font-size: .64rem; text-transform: uppercase; letter-spacing: .08em; }
+.eq .res { justify-self: end; font: 800 1.8rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.eq .res.red { color: var(--pen); }
+@media (max-width: 700px) { .eq { grid-template-columns: 1fr 1fr; } .eq .name { grid-column: 1 / -1; } .eq .res { grid-column: 1 / -1; justify-self: start; } }
+.total-line { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 12px; border-top: 2px solid var(--rule); }
+.total-line b { font: 900 2.6rem/1 var(--display); background: var(--hl); color: var(--hl-ink); padding: 2px 8px; }
+.bar { display: flex; height: 30px; border: 2px solid var(--rule); margin-top: 14px; }
+.bar i { display: block; height: 100%; }
+.bar .manual { background: var(--ink); }
+.bar .rework { background: repeating-linear-gradient(45deg, var(--pen) 0 3px, transparent 3px 7px); border-left: 2px solid var(--rule); }
+.bar .check { background: repeating-linear-gradient(-45deg, var(--hairline) 0 2px, transparent 2px 6px); border-left: 2px solid var(--rule); }
+.assume { display: grid; gap: 10px; }
+.assume label { display: grid; gap: 4px; font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.assume input[type=range] { width: 100%; accent-color: var(--ink); }
+.assume output { font: 800 1.4rem/1 var(--display); color: var(--ink); }
+
+/* 6 · recommend */
+.cands { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+.cands th { text-align: left; font: 600 .64rem/1.2 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); padding: 0 12px 8px 0; border-bottom: 2px solid var(--rule); white-space: nowrap; }
+.cands td { padding: 11px 12px 11px 0; border-bottom: 1px dotted var(--hairline); vertical-align: top; font-variant-numeric: tabular-nums; }
+.cands tr.pick td { background: color-mix(in srgb, var(--hl) 28%, transparent); }
+.cands .tool { font: 800 1.25rem/1 var(--display); text-transform: uppercase; }
+.score { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 2px solid var(--rule); border-radius: 50%; font: 800 1.2rem/1 var(--display); }
+.roadmap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2px solid var(--rule); margin-top: 18px; }
+.roadmap div { padding: 14px; border-left: 1px solid var(--hairline); display: grid; gap: 8px; align-content: start; }
+.roadmap div:first-child { border-left: 0; }
+.roadmap h4 { font-size: 1.4rem; }
+.roadmap p { font-size: var(--t-small); color: var(--ink-2); }
+@media (max-width: 700px) { .roadmap { grid-template-columns: 1fr; } .roadmap div { border-left: 0; border-top: 1px solid var(--hairline); } .roadmap div:first-child { border-top: 0; } }
+
+/* 7 · confirm */
+.review { display: grid; gap: 0; }
+.finding { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 14px 0; border-bottom: 1px dotted var(--hairline); align-items: center; }
+.finding p { font-size: var(--t-small); }
+.finding .src { font: 400 .66rem/1.3 var(--mono); font-stretch: 87.5%; color: var(--ink-2); margin-top: 4px; }
+.state { display: inline-flex; border: 1.5px solid var(--rule); }
+.state button { font: 600 .62rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; padding: 7px 9px; border: 0; background: transparent; color: var(--ink); cursor: pointer; }
+.state button + button { border-left: 1.5px solid var(--rule); }
+.state button[aria-pressed="true"].c { background: var(--private); color: var(--field); }
+.state button[aria-pressed="true"].x { background: var(--pen); color: var(--field); }
+.state button[aria-pressed="true"].d { background: var(--hairline); color: var(--ink); }
+.qs { list-style: none; margin: 0; padding: 0; counter-reset: q; }
+.qs li { counter-increment: q; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; padding: 13px 0; border-top: 1px solid var(--hairline); }
+.qs li::before { content: "Q" counter(q); font: 800 1.3rem/1.2 var(--display); color: var(--pen); }
+.qs p { font-weight: 500; font-size: var(--t-small); }
+.qs small { display: block; margin-top: 5px; font: 400 .68rem/1.45 var(--mono); font-stretch: 87.5%; color: var(--ink-2); }
+
+/* 8 · re-measure */
+.compare { display: grid; gap: 18px; }
+.cbar { display: grid; grid-template-columns: 90px minmax(0, 1fr) 90px; gap: 12px; align-items: center; }
+.cbar .track { height: 28px; border: 2px solid var(--rule); position: relative; }
+.cbar .fill { position: absolute; inset: 0 auto 0 0; background: var(--ink); }
+.cbar .fill.after { background: repeating-linear-gradient(90deg, var(--ink-2) 0 6px, transparent 6px 10px); }
+.cbar b { font: 800 1.4rem/1 var(--display); text-align: right; }
+
+/* closing */
+.close { border-top: 2px solid var(--rule); padding-block: clamp(56px, 8vw, 96px); }
+.close .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 24px; }
+.close h2 { font-size: clamp(3rem, 2rem + 4.6vw, 6.4rem); line-height: .84; max-width: 12ch; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 20px; font: 600 .76rem/1 var(--mono); font-stretch: 87.5%; letter-spacing: .1em; text-transform: uppercase; text-decoration: none; border: 2px solid var(--rule); }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btn:hover { background: var(--hl); color: var(--hl-ink); border-color: var(--hl); }
+footer { border-top: 2px solid var(--rule); padding-block: 22px; font: 400 .7rem/1.5 var(--mono); font-stretch: 87.5%; color: var(--ink-2); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="index.html" aria-label="Discovery Agent home">
+      <svg viewBox="0 0 28 28" aria-hidden="true">
+        <circle cx="14" cy="15" r="11" fill="none" stroke="var(--ink)" stroke-width="2.5"/>
+        <rect x="11.5" y="0.5" width="5" height="3" fill="var(--ink)"/>
+        <path d="M14 15 L14 7.5" stroke="var(--pen)" stroke-width="2.5" stroke-linecap="square"/>
+        <circle cx="14" cy="15" r="2" fill="var(--ink)"/>
+      </svg>
+      Discovery Agent
+    </a>
+    <nav aria-label="Pages">
+      <a class="hide-sm" href="index.html">← Overview</a>
+      <a class="go" href="index.html#request">Book a scan →</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <section class="intro">
+    <div class="wrap">
+      <span class="label">The full workflow</span>
+      <h1>How a discovery scan works</h1>
+      <p class="lead">Eight stages, from the first consent notice to checking whether the new tool actually saved time. Every example on this page comes from our pilot with a simulated accounts-payable team.</p>
+
+      <nav class="index" aria-label="Stages">
+        <a href="#setup"><b>1</b><span>Set up</span></a>
+        <a href="#record"><b>2</b><span>Record</span></a>
+        <a href="#split"><b>3</b><span>Split into steps</span></a>
+        <a href="#understand"><b>4</b><span>Understand</span></a>
+        <a href="#measure"><b>5</b><span>Measure</span></a>
+        <a href="#recommend"><b>6</b><span>Recommend</span></a>
+        <a href="#confirm"><b>7</b><span>Confirm + re-measure</span></a>
+      </nav>
+
+      <div class="timeline" aria-label="Typical timeline">
+        <div><b>Day 0</b><span>Pick the team, approve the apps, staff consent</span></div>
+        <div><b>Days 1–10</b><span>3–5 people record their normal work, including a month-end</span></div>
+        <div class="hl"><b>Day 11</b><span>Analysis runs; draft report and interview plan</span></div>
+        <div><b>Day 12–14</b><span>Interview confirms assumptions; final roadmap</span></div>
+        <div><b>After go-live</b><span>Record again and compare</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 1 · SET UP -->
+  <section class="stage" id="setup" aria-labelledby="h-setup">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">1</div>
+        <div>
+          <h2 id="h-setup">Set up</h2>
+          <div class="who"><span class="tag human">Your manager</span><span class="tag human">Each participant</span></div>
+        </div>
+        <div class="text">
+          <p>You choose which team to study and which web apps may be recorded. Everyone else stays out of it.</p>
+          <p>Each participant installs a browser extension and reads a plain consent notice before recording can start. Nobody is recorded without agreeing.</p>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 1a · Consent notice</span><span class="label">Shown before Start</span></div>
+          <div class="exhibit-body">
+            <div class="consent">
+              <div class="bar"><svg viewBox="0 0 18 18" aria-hidden="true"><circle cx="9" cy="9" r="7" fill="none" stroke="var(--ink)" stroke-width="2"/><circle cx="9" cy="9" r="3" fill="var(--pen)"/></svg>Discovery Recorder</div>
+              <div class="in">
+                <p><b>Your team is running a 1-week work study.</b></p>
+                <ul>
+                  <li>We record clicks, app switches and copy-paste in the approved apps.</li>
+                  <li>We never record what you type or your passwords.</li>
+                  <li>You can pause at any time. Nothing is recorded while paused.</li>
+                  <li>Results describe the work, never you.</li>
+                </ul>
+                <div class="row"><span class="fakebox">✓</span>I understand and agree</div>
+                <span class="fakebtn">● Start recording</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 1b · Approved apps</span><span class="label">Set by your manager</span></div>
+          <div class="exhibit-body scroll-x">
+            <table class="allow">
+              <thead><tr><th>App</th><th>Used for</th><th>Recorded</th></tr></thead>
+              <tbody>
+                <tr><td>Team mailbox</td><td>Invoices arrive by email</td><td class="yes-mark">Yes</td></tr>
+                <tr><td>Accounting system</td><td>Entering bills, approvals</td><td class="yes-mark">Yes</td></tr>
+                <tr><td>Purchase orders</td><td>Checking PO balances</td><td class="yes-mark">Yes</td></tr>
+                <tr><td>Team spreadsheet</td><td>Tracking invoices</td><td class="yes-mark">Yes</td></tr>
+                <tr><td>Personal email, banking, everything else</td><td>—</td><td class="no-mark">Never</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · RECORD -->
+  <section class="stage" id="record" aria-labelledby="h-record">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">2</div>
+        <div>
+          <h2 id="h-record">Record</h2>
+          <div class="who"><span class="tag human">Your team, working as usual</span></div>
+        </div>
+        <div class="text">
+          <p>People do their normal job. The extension writes down what happens, step by step, like an observer with a stopwatch.</p>
+          <p>It logs which field someone typed in and how many characters, never the text itself. A small badge stays on screen with a Pause button.</p>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 2a · The event log, live</span><span class="label">Person B · pilot</span></div>
+          <div class="exhibit-body">
+            <div class="stream" id="stream" aria-live="off"></div>
+          </div>
+        </div>
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 2b · What each line means</span></div>
+          <div class="exhibit-body">
+            <div class="badge-demo" id="badge"><i></i><span id="badgeText">Recording</span><button type="button" id="pauseBtn">Pause</button></div>
+            <div class="legend-list">
+              <div><span class="mono">CLICK</span><span>A button or field, by its label</span></div>
+              <div><span class="mono">COPY / PASTE</span><span>Which field it came from and went into, plus the length</span></div>
+              <div><span class="mono">TYPE</span><span>Field name and number of characters only</span></div>
+              <div><span class="mono">SWITCH</span><span>Moving between apps</span></div>
+              <div><span class="mono" style="color:var(--pen)">SCREEN ERROR</span><span>A message the app showed, word for word</span></div>
+              <div><span class="mono">SCREENSHOT</span><span>Every few seconds, as evidence; passwords blacked out</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · SPLIT -->
+  <section class="stage" id="split" aria-labelledby="h-split">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">3</div>
+        <div>
+          <h2 id="h-split">Split into steps</h2>
+          <div class="who"><span class="tag code">Plain code</span></div>
+        </div>
+        <div class="text">
+          <p>Hundreds of tiny events become a short list of steps a person would recognise.</p>
+          <p>Code drops the noise (stray clicks, repeated keystrokes) and cuts at natural boundaries. The originals are kept, so every step can be traced back.</p>
+        </div>
+      </div>
+      <div class="exhibit">
+        <div class="exhibit-cap"><span class="label">Exhibit 3 · 13 events → 4 steps</span><span class="label">Person B, invoice INV-GOS-88247</span></div>
+        <div class="exhibit-body">
+          <div class="split">
+            <div class="raw">
+              <div class="g1">#4  00:09 mail CLICK open-attachment</div>
+              <div class="g1">#5  00:09 mail PAGE /mail/doc/…88247</div>
+              <div class="g1 drop">#6  00:22 mail CLICK (empty space)</div>
+              <div class="g2">#11 00:26 mail COPY invoice-number (13)</div>
+              <div class="g2">#12 00:27 SWITCH mail → ledgerpoint</div>
+              <div class="g2">#14 00:29 ledger PASTE invoice-number</div>
+              <div class="g2 drop">#15 00:30 ledger TYPE invoice-number (dup)</div>
+              <div class="g3">#62 02:04 ledger PASTE vat (9)</div>
+              <div class="g3">#69 02:18 ledger TYPE vat (0) · cleared</div>
+              <div class="g3">#76 02:30 ledger TYPE vat (3)</div>
+              <div class="g4">#95 03:15 ledger CLICK submit-bill</div>
+              <div class="g4" style="color:var(--pen)">#96 03:15 SCREEN ERROR "Due date is before…"</div>
+              <div class="g4">#100 03:21 ledger CLICK submit-bill</div>
+            </div>
+            <div class="arrow" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M4 20 H32 M22 10 L32 20 L22 30" fill="none" stroke="var(--ink)" stroke-width="3"/></svg></div>
+            <div class="steps">
+              <div class="s1"><b>Open the invoice</b><span>2 events · 00:09</span></div>
+              <div class="s2"><b>Copy invoice number into the bill</b><span>3 events · 00:26–00:29</span></div>
+              <div class="s3"><b>Enter VAT, clear it, enter it again</b><span>3 events · rework</span></div>
+              <div class="s4"><b>Submit, rejected, fix date, resubmit</b><span>3 events · error shown</span></div>
+            </div>
+          </div>
+          <div class="rules">
+            <div><b>New step starts at</b><span>a copy, opening a document, a submit or a send</span></div>
+            <div><b>Stays inside a step</b><span>app switches, page loads, on-screen messages</span></div>
+            <div><b>Dropped as noise</b><span>clicks on empty space, duplicate keystrokes</span></div>
+            <div><b>Flagged as rework</b><span>a field edited twice, deletions, rejected submits</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · UNDERSTAND -->
+  <section class="stage" id="understand" aria-labelledby="h-understand">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">4</div>
+        <div>
+          <h2 id="h-understand">Understand</h2>
+          <div class="who"><span class="tag ai">AI</span></div>
+        </div>
+        <div class="text">
+          <p>The AI writes one plain sentence per step, then finds the work that repeats across people and days.</p>
+          <p>Each recording is marked sensitive or not. Sensitive work is analysed on a computer in your office; anything combined with it stays there too.</p>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 4a · Process found: supplier invoice entry</span><span class="label">5 occurrences, 2 people</span></div>
+          <div class="exhibit-body scroll-x">
+            <table class="pchart">
+              <thead><tr><th>Step</th><th class="symcol">○ ⇨ □ D ✕</th><th>Avg</th></tr></thead>
+              <tbody>
+                <tr><td>Open invoice email and PDF</td><td><div class="syms"><span class="on">○</span><span>⇨</span><span>□</span><span>D</span><span>✕</span></div></td><td class="mono">17s</td></tr>
+                <tr><td>Switch to accounting system</td><td><div class="syms"><span>○</span><span class="on">⇨</span><span>□</span><span>D</span><span>✕</span></div></td><td class="mono">2s</td></tr>
+                <tr><td>Copy fields across, one at a time</td><td><div class="syms"><span class="on">○</span><span class="on">⇨</span><span>□</span><span>D</span><span>✕</span></div></td><td class="mono">58s</td></tr>
+                <tr><td>Correct a pasted value</td><td><div class="syms"><span>○</span><span>⇨</span><span>□</span><span>D</span><span class="on r">✕</span></div></td><td class="mono">14s</td></tr>
+                <tr><td>Download and attach the PDF</td><td><div class="syms"><span class="on">○</span><span class="on">⇨</span><span>□</span><span>D</span><span>✕</span></div></td><td class="mono">11s</td></tr>
+                <tr><td>Submit; system checks the bill</td><td><div class="syms"><span>○</span><span>⇨</span><span class="on">□</span><span>D</span><span>✕</span></div></td><td class="mono">6s</td></tr>
+                <tr><td>Wait for manager's approval code</td><td><div class="syms"><span>○</span><span>⇨</span><span>□</span><span class="on">D</span><span>✕</span></div></td><td class="mono">varies</td></tr>
+              </tbody>
+            </table>
+            <p class="route-note">○ operation · ⇨ transport between apps · □ inspection · D delay · ✕ rework. Step times are illustrative averages from the pilot.</p>
+          </div>
+        </div>
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 4b · Where each part runs</span><span class="label">Try the switches</span></div>
+          <div class="exhibit-body">
+            <div class="route" id="route">
+              <div class="route-row">
+                <div class="rec">Person A
+                  <span class="toggle" role="group" aria-label="Person A sensitivity"><button type="button" data-p="a" data-v="1" aria-pressed="true">Sensitive</button><button type="button" data-p="a" data-v="0" aria-pressed="false">Not</button></span>
+                </div>
+                <span class="mono" aria-hidden="true">→</span>
+                <div class="dest" id="d-a">Steps for Person A · local model</div>
+              </div>
+              <div class="route-row">
+                <div class="rec">Person B
+                  <span class="toggle" role="group" aria-label="Person B sensitivity"><button type="button" data-p="b" data-v="1" aria-pressed="true">Sensitive</button><button type="button" data-p="b" data-v="0" aria-pressed="false">Not</button></span>
+                </div>
+                <span class="mono" aria-hidden="true">→</span>
+                <div class="dest" id="d-b">Steps for Person B · local model</div>
+              </div>
+              <div class="route-row">
+                <div class="rec">Combined</div>
+                <span class="mono" aria-hidden="true">→</span>
+                <div class="dest" id="d-c">Processes + interview plan · local model</div>
+              </div>
+              <div class="route-row">
+                <div class="rec">Numbers</div>
+                <span class="mono" aria-hidden="true">→</span>
+                <div class="dest code">Costs + tool matching · plain code</div>
+              </div>
+            </div>
+            <p class="route-note" id="route-note">Local: runs on a computer in your office, nothing leaves the building. Cloud: a larger hosted model, sent text only, never screenshots.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · MEASURE -->
+  <section class="stage" id="measure" aria-labelledby="h-measure">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">5</div>
+        <div>
+          <h2 id="h-measure">Measure</h2>
+          <div class="who"><span class="tag code">Plain code</span></div>
+        </div>
+        <div class="text">
+          <p>Code turns observed time into money, in three buckets: doing the work, fixing mistakes, and checking it.</p>
+          <p>Time per invoice comes from the recordings. Volume and hourly rates are assumptions, shown openly, that you confirm in the interview.</p>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 5a · The calculation</span><span class="label">Supplier invoice entry, per month</span></div>
+          <div class="exhibit-body formula">
+            <div class="eq"><span class="name">Manual work</span><span class="term"><small>volume</small><span id="v1">350</span> invoices</span><span class="term"><small>observed</small>× 2.3 min</span><span class="term"><small>clerk rate</small>× AED <span id="r1">60</span>/h</span><span class="res" id="o-manual">AED 801</span></div>
+            <div class="eq"><span class="name">Rework</span><span class="term"><small>volume</small><span id="v2">350</span> invoices</span><span class="term"><small>observed</small>× 0.51 min</span><span class="term"><small>clerk rate</small>× AED <span id="r2">60</span>/h</span><span class="res red" id="o-rework">AED 179</span></div>
+            <div class="eq"><span class="name">Checking</span><span class="term"><small>volume</small><span id="v3">350</span> invoices</span><span class="term"><small>assumed</small>× 2 min</span><span class="term"><small>manager rate</small>× AED 150/h</span><span class="res" id="o-check">AED 1,750</span></div>
+            <div class="total-line"><span class="label">Total per month</span><b id="o-total">AED 2,730</b></div>
+            <div class="bar" role="img" aria-label="Cost split between manual work, rework and checking">
+              <i class="manual" id="b-m" style="width:29%"></i><i class="rework" id="b-r" style="width:7%"></i><i class="check" id="b-c" style="width:64%"></i>
+            </div>
+          </div>
+        </div>
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 5b · Change the assumptions</span><span class="label">Updates 5a</span></div>
+          <div class="exhibit-body assume">
+            <label for="a-vol">Invoices per month <output id="a-vol-o" for="a-vol">350</output><input id="a-vol" type="range" min="100" max="1500" step="50" value="350"></label>
+            <label for="a-rate">Clerk cost, AED per hour <output id="a-rate-o" for="a-rate">60</output><input id="a-rate" type="range" min="30" max="150" step="5" value="60"></label>
+            <p class="route-note">In the real report these sit on the Processes tab, and every figure links to its formula.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · RECOMMEND -->
+  <section class="stage" id="recommend" aria-labelledby="h-recommend">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">6</div>
+        <div>
+          <h2 id="h-recommend">Recommend</h2>
+          <div class="who"><span class="tag code">Catalog + scoring</span></div>
+        </div>
+        <div class="text">
+          <p>Each process is matched against a catalog of tools that already exist, scored by a published method, and checked for payback at your volume.</p>
+          <p>We don't build automations and take no referral fees. Where nothing fits, we write a spec your own team or agency can build from.</p>
+        </div>
+      </div>
+      <div class="exhibit">
+        <div class="exhibit-cap"><span class="label">Exhibit 6a · Candidates for supplier invoice entry</span><span class="label">At 350 invoices a month</span></div>
+        <div class="exhibit-body scroll-x">
+          <table class="cands">
+            <thead><tr><th>Score</th><th>Tool</th><th>Takes over</th><th>Saves / mo</th><th>Costs / mo</th><th>Verdict</th></tr></thead>
+            <tbody>
+              <tr class="pick"><td><span class="score">66</span></td><td><span class="tool">Yooz</span><br><span class="label">AP automation</span></td><td>Reading invoices, PO checks, duplicates, approval requests</td><td>AED 1,907</td><td>AED 1,200</td><td><b>In the plan.</b> Net AED 707/mo, setup AED 8,000, payback ~11 months</td></tr>
+              <tr><td><span class="score">66</span></td><td><span class="tool">Tipalti</span><br><span class="label">AP automation</span></td><td>Similar scope</td><td>—</td><td>AED 1,500</td><td>Pays for itself above ~400 invoices a month</td></tr>
+              <tr><td><span class="score">66</span></td><td><span class="tool">Stampli</span><br><span class="label">AP automation</span></td><td>Similar scope</td><td>—</td><td>AED 3,500</td><td>Pays for itself above ~933 invoices a month</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="roadmap" aria-label="Roadmap">
+        <div><span class="label">Now · month 1</span><h4>Confirm the numbers</h4><p>Interview the team, check volumes in the system reports, agree the approval rules.</p></div>
+        <div><span class="label">Next · months 2–3</span><h4>Roll out AP automation</h4><p>Invoice capture, PO matching and duplicate checks. Final submit stays with a person.</p></div>
+        <div><span class="label">Later</span><h4>Approval requests</h4><p>Route approval codes automatically once volumes justify it; spec provided if no tool fits.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · CONFIRM + RE-MEASURE -->
+  <section class="stage" id="confirm" aria-labelledby="h-confirm">
+    <div class="wrap">
+      <div class="stage-head">
+        <div class="stage-num" aria-hidden="true">7</div>
+        <div>
+          <h2 id="h-confirm">Confirm, then re-measure</h2>
+          <div class="who"><span class="tag ai">AI drafts</span><span class="tag human">People decide</span></div>
+        </div>
+        <div class="text">
+          <p>Every finding starts as a draft. A consultant or your manager confirms or rejects it, and the interview plan tests the assumptions before anyone buys a tool.</p>
+          <p>After the tool goes live, the same team records again, and you see whether the time really went down.</p>
+        </div>
+      </div>
+      <div class="pair">
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 7a · Findings review</span><span class="label" id="reviewCount">0 of 3 confirmed</span></div>
+          <div class="exhibit-body review" id="review">
+            <div class="finding"><div><p>Invoice booked as NLT-09411 instead of NLT-0941; the system accepted it.</p><div class="src">Evidence: Person A · step 19 · screenshot f_0163</div></div><span class="state" role="group" aria-label="Status"><button type="button" class="d" aria-pressed="true">Draft</button><button type="button" class="c" aria-pressed="false">Confirm</button><button type="button" class="x" aria-pressed="false">Reject</button></span></div>
+            <div class="finding"><div><p>Invoice addressed to "Meridian Advisors" was entered without a query.</p><div class="src">Evidence: Person A · step 11 · screenshot f_0092</div></div><span class="state" role="group" aria-label="Status"><button type="button" class="d" aria-pressed="true">Draft</button><button type="button" class="c" aria-pressed="false">Confirm</button><button type="button" class="x" aria-pressed="false">Reject</button></span></div>
+            <div class="finding"><div><p>A duplicate invoice was re-keyed and only stopped by the system's check.</p><div class="src">Evidence: Person A · step 31 · screenshot f_0332</div></div><span class="state" role="group" aria-label="Status"><button type="button" class="d" aria-pressed="true">Draft</button><button type="button" class="c" aria-pressed="false">Confirm</button><button type="button" class="x" aria-pressed="false">Reject</button></span></div>
+          </div>
+        </div>
+        <div class="exhibit">
+          <div class="exhibit-cap"><span class="label">Exhibit 7b · Before and after</span><span class="label">Same team, same process</span></div>
+          <div class="exhibit-body compare">
+            <div class="cbar"><span class="label">Before</span><div class="track"><span class="fill" style="width:100%"></span></div><b>2.3 min</b></div>
+            <div class="cbar"><span class="label">After</span><div class="track"><span class="fill after" style="width:0%" id="afterFill"></span></div><b>?</b></div>
+            <p class="route-note">The "after" bar fills in from the second recording. Both are measured the same way, so the comparison is fair, and we have no stake in which tool you chose.</p>
+            <ol class="qs">
+              <li><div><p>We assumed 350 invoices a month. How many does the team actually enter, and what happens at month-end?</p><small>Interview question · tests the volume behind every figure</small></div></li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" aria-labelledby="h-close">
+    <div class="wrap">
+      <h2 id="h-close">Start with one team.</h2>
+      <a class="btn solid" href="index.html#request">Book a discovery scan →</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Discovery Agent · Dubai, UAE</span>
+    <span>Prototype · examples from a simulated team</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  // ---- Exhibit 2a: event log replay (lines from the pilot recording) ----
+  const LINES = [
+    ['k', '#4  00:09', 'mail', 'CLICK', 'open-attachment INV-GOS-88247.pdf'],
+    ['k', '#11 00:26', 'mail', 'COPY', 'invoice-number · 13 chars'],
+    ['k', '#12 00:27', '', 'SWITCH', 'mail → ledgerpoint'],
+    ['k', '#14 00:29', 'ledger', 'PASTE', 'invoice-number · 13 chars'],
+    ['k', '#22 00:43', 'mail', 'COPY', 'po-number · 12 chars'],
+    ['k', '#25 00:46', 'ledger', 'PASTE', 'po-number'],
+    ['k', '#57 01:57', 'ledger', 'PASTE', 'net · 9 chars'],
+    ['k', '#69 02:18', 'ledger', 'TYPE', 'vat · 0 chars (cleared)'],
+    ['k', '#76 02:30', 'ledger', 'TYPE', 'vat · 3 chars'],
+    ['k', '#95 03:15', 'ledger', 'CLICK', 'submit-bill'],
+    ['e', '#96 03:15', 'ledger', 'SCREEN ERROR', '"Due date is before the invoice date"'],
+    ['k', '#100 03:21', 'ledger', 'CLICK', 'submit-bill → LP-2026-04401'],
+  ]
+  const stream = document.getElementById('stream')
+  const line = (l) => `<span class="k">${l[1]}</span> ${l[2] ? l[2] + ' ' : ''}<span class="${l[0] === 'e' ? 'e' : 'v'}">${l[3]}</span> ${l[4]}`
+  const MAXL = 8
+  LINES.slice(-MAXL).forEach((l) => { const d = document.createElement('div'); d.innerHTML = line(l); stream.appendChild(d) })
+
+  const badge = document.getElementById('badge')
+  const pauseBtn = document.getElementById('pauseBtn')
+  const badgeText = document.getElementById('badgeText')
+  let paused = false
+  pauseBtn.addEventListener('click', () => {
+    paused = !paused
+    badge.classList.toggle('paused', paused)
+    badgeText.textContent = paused ? 'Paused' : 'Recording'
+    pauseBtn.textContent = paused ? 'Resume' : 'Pause'
+    const d = document.createElement('div')
+    d.className = 'p enter'
+    d.textContent = paused ? '— recording paused by the person; nothing logged —' : '— recording resumed —'
+    stream.appendChild(d)
+    while (stream.children.length > MAXL) stream.removeChild(stream.firstChild)
+  })
+
+  // ---- Exhibit 4b: routing ----
+  const sens = { a: true, b: true }
+  function route() {
+    const set = (id, text, cls) => { const el = document.getElementById(id); el.textContent = text; el.className = 'dest ' + cls }
+    set('d-a', `Steps for Person A · ${sens.a ? 'local model' : 'cloud model'}`, sens.a ? 'local' : 'cloud')
+    set('d-b', `Steps for Person B · ${sens.b ? 'local model' : 'cloud model'}`, sens.b ? 'local' : 'cloud')
+    const anyLocal = sens.a || sens.b
+    set('d-c', `Processes + interview plan · ${anyLocal ? 'local model' : 'cloud model'}`, anyLocal ? 'local' : 'cloud')
+  }
+  document.querySelectorAll('#route .toggle button').forEach((b) => b.addEventListener('click', () => {
+    sens[b.dataset.p] = b.dataset.v === '1'
+    b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    route()
+  }))
+  route()
+
+  // ---- Exhibit 5: calculation ----
+  const fmt = (n) => 'AED ' + Math.round(n).toLocaleString('en-US')
+  function calc() {
+    const vol = +document.getElementById('a-vol').value
+    const rate = +document.getElementById('a-rate').value
+    document.getElementById('a-vol-o').textContent = vol.toLocaleString('en-US')
+    document.getElementById('a-rate-o').textContent = rate
+    ;['v1', 'v2', 'v3'].forEach((id) => (document.getElementById(id).textContent = vol.toLocaleString('en-US')))
+    ;['r1', 'r2'].forEach((id) => (document.getElementById(id).textContent = rate))
+    const m = vol * 2.29 / 60 * rate
+    const r = vol * 0.51 / 60 * rate
+    const c = vol * 2 / 60 * 150
+    const t = m + r + c
+    document.getElementById('o-manual').textContent = fmt(m)
+    document.getElementById('o-rework').textContent = fmt(r)
+    document.getElementById('o-check').textContent = fmt(c)
+    document.getElementById('o-total').textContent = fmt(t)
+    document.getElementById('b-m').style.width = (m / t * 100) + '%'
+    document.getElementById('b-r').style.width = (r / t * 100) + '%'
+    document.getElementById('b-c').style.width = (c / t * 100) + '%'
+  }
+  document.getElementById('a-vol').addEventListener('input', calc)
+  document.getElementById('a-rate').addEventListener('input', calc)
+  calc()
+
+  // ---- Exhibit 7a: review states ----
+  const review = document.getElementById('review')
+  const countEl = document.getElementById('reviewCount')
+  function count() {
+    const n = review.querySelectorAll('button.c[aria-pressed="true"]').length
+    countEl.textContent = `${n} of 3 confirmed`
+  }
+  review.querySelectorAll('.state button').forEach((b) => b.addEventListener('click', () => {
+    b.parentElement.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)))
+    count()
+  }))
+  count()
+
+  // ---- replay the event log (motion only) ----
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+  let i = 0
+  let timer = null
+  function tick() {
+    if (!paused) {
+      const d = document.createElement('div')
+      d.className = 'enter'
+      d.innerHTML = line(LINES[i % LINES.length])
+      stream.appendChild(d)
+      while (stream.children.length > MAXL) stream.removeChild(stream.firstChild)
+      i += 1
+    }
+    timer = setTimeout(tick, i % LINES.length === 0 ? 2400 : 900)
+  }
+  timer = setTimeout(tick, 2000)
+  document.addEventListener('visibilitychange', () => { clearTimeout(timer); if (!document.hidden) timer = setTimeout(tick, 900) })
+})()
+</script>
+</body>
+</html>
